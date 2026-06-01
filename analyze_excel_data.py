@@ -248,6 +248,116 @@ print(f"\nAge Group with Highest Avg Cost per Member: {age_summary['Avg_Amount_P
 print(f"  Avg Amount: ${highest_avg_cost_age['Avg_Amount_Per_Member']:,.2f}")
 
 # ============================================================================
+# ANALYSIS 3: PLAN TYPE ANALYSIS
+# ============================================================================
+print("\n\n" + "=" * 80)
+print("PLAN TYPE ANALYSIS")
+print("=" * 80)
+
+plan_type_summary = df.groupby('PLAN_TYPE').agg({
+    'CALENDAR_YEAR': 'count',  # Member count
+    'TOTAL_AMT_PAID': ['sum', 'mean', 'median', 'std'],
+    'MEMBER_MONTHS': 'sum',
+    'TOTAL_NUM_ICN': 'sum',
+    'IP_ADMIT_CNT': 'sum',
+    'ED_VISIT_CNT': 'sum',
+    'PCP_VISIT_CNT': 'sum',
+    'TELEHEALTH_VISIT_CNT': 'sum',
+    'DENTAL_VISIT_CNT': 'sum',
+    'ROUTINE_EXAM_CNT': 'sum'
+}).round(2)
+
+# Rename columns for clarity
+plan_type_summary.columns = [
+    'Member_Count',
+    'Total_Amount_Paid',
+    'Avg_Amount_Per_Member',
+    'Median_Amount_Per_Member',
+    'StdDev_Amount_Per_Member',
+    'Total_Member_Months',
+    'Total_Claims',
+    'Inpatient_Admissions',
+    'ED_Visits',
+    'PCP_Visits',
+    'Telehealth_Visits',
+    'Dental_Visits',
+    'Routine_Exams'
+]
+
+# Add percentage of total
+plan_type_summary['Pct_of_Total_Members'] = (plan_type_summary['Member_Count'] / plan_type_summary['Member_Count'].sum() * 100).round(2)
+
+# Sort by Member Count (descending)
+plan_type_summary = plan_type_summary.sort_values('Member_Count', ascending=False)
+
+print("\n" + plan_type_summary.to_string())
+
+# ============================================================================
+# 3B: DETAILED PLAN TYPE BREAKDOWN
+# ============================================================================
+print("\n" + "-" * 80)
+print("DETAILED PLAN TYPE BREAKDOWN")
+print("-" * 80)
+
+for plan_type in plan_type_summary.index:
+    plan_data = df[df['PLAN_TYPE'] == plan_type]
+    print(f"\n{plan_type}:")
+    print(f"  Members: {len(plan_data)}")
+    print(f"  Percentage of Total: {(len(plan_data) / len(df) * 100):.2f}%")
+    print(f"  Total Amount Paid: ${plan_data['TOTAL_AMT_PAID'].sum():,.2f}")
+    print(f"  Avg Amount Per Member: ${plan_data['TOTAL_AMT_PAID'].mean():,.2f}")
+    print(f"  Median Amount Per Member: ${plan_data['TOTAL_AMT_PAID'].median():,.2f}")
+    print(f"  Total Member Months: {plan_data['MEMBER_MONTHS'].sum():,.0f}")
+    print(f"  Total Claims: {plan_data['TOTAL_NUM_ICN'].sum():.0f}")
+    print(f"  Inpatient Admissions: {plan_data['IP_ADMIT_CNT'].sum():.0f}")
+    print(f"  ED Visits: {plan_data['ED_VISIT_CNT'].sum():.0f}")
+    print(f"  PCP Visits: {plan_data['PCP_VISIT_CNT'].sum():.0f}")
+    print(f"  Telehealth Visits: {plan_data['TELEHEALTH_VISIT_CNT'].sum():.0f}")
+    print(f"  Dental Visits: {plan_data['DENTAL_VISIT_CNT'].sum():.0f}")
+    print(f"  Routine Exams: {plan_data['ROUTINE_EXAM_CNT'].sum():.0f}")
+
+# ============================================================================
+# 3C: PLAN TYPE AND RISK LEVEL COMPARISON
+# ============================================================================
+print("\n" + "-" * 80)
+print("PLAN TYPE BY RISK LEVEL")
+print("-" * 80)
+
+plan_risk_crosstab = pd.crosstab(df['PLAN_TYPE'], df['RISK_LEVEL'], margins=True)
+print("\n" + plan_risk_crosstab.to_string())
+
+# ============================================================================
+# 3D: PLAN TYPE INSIGHTS
+# ============================================================================
+print("\n" + "-" * 80)
+print("KEY PLAN TYPE INSIGHTS")
+print("-" * 80)
+
+# Plan type with highest total costs
+highest_cost_plan = plan_type_summary.loc[plan_type_summary['Total_Amount_Paid'].idxmax()]
+print(f"\nPlan Type with Highest Total Costs: {plan_type_summary['Total_Amount_Paid'].idxmax()}")
+print(f"  Total Amount: ${highest_cost_plan['Total_Amount_Paid']:,.2f}")
+print(f"  Members: {int(highest_cost_plan['Member_Count'])}")
+
+# Plan type with highest average cost per member
+highest_avg_plan = plan_type_summary.loc[plan_type_summary['Avg_Amount_Per_Member'].idxmax()]
+print(f"\nPlan Type with Highest Avg Cost per Member: {plan_type_summary['Avg_Amount_Per_Member'].idxmax()}")
+print(f"  Avg Amount: ${highest_avg_plan['Avg_Amount_Per_Member']:,.2f}")
+print(f"  Members: {int(highest_avg_plan['Member_Count'])}")
+
+# Plan type with most inpatient admissions
+highest_admit_plan = plan_type_summary.loc[plan_type_summary['Inpatient_Admissions'].idxmax()]
+print(f"\nPlan Type with Most Inpatient Admissions: {plan_type_summary['Inpatient_Admissions'].idxmax()}")
+print(f"  Total Admissions: {int(highest_admit_plan['Inpatient_Admissions'])}")
+print(f"  Members: {int(highest_admit_plan['Member_Count'])}")
+
+# Plan type with most ED visits
+highest_ed_plan = plan_type_summary.loc[plan_type_summary['ED_Visits'].idxmax()]
+print(f"\nPlan Type with Most ED Visits: {plan_type_summary['ED_Visits'].idxmax()}")
+print(f"  Total ED Visits: {int(highest_ed_plan['ED_Visits'])}")
+print(f"  Members: {int(highest_ed_plan['Member_Count'])}")
+
+# ============================================================================
 # EXPORT RESULTS TO CSV
 # ============================================================================
 print("\n" + "=" * 80)
@@ -273,11 +383,16 @@ print(f"✓ Age Demographics exported to: demographic_summary_by_age.csv")
 sex_race_crosstab.to_csv('demographic_crosstab_sex_race.csv')
 print(f"✓ Sex/Race Cross-tabulation exported to: demographic_crosstab_sex_race.csv")
 
+plan_type_summary.to_csv('plan_type_summary.csv')
+print(f"✓ Plan Type Summary exported to: plan_type_summary.csv")
+
+plan_risk_crosstab.to_csv('plan_type_by_risk_level.csv')
+print(f"✓ Plan Type by Risk Level exported to: plan_type_by_risk_level.csv")
+
 print("\n" + "=" * 80)
 print("READY FOR ADDITIONAL ANALYSES")
 print("=" * 80)
 print("\nYou can easily add more analyses such as:")
-print("  • Summary by PLAN_TYPE")
 print("  • Summary by RISK_LEVEL")
 print("  • Summary by MCO_REGION")
 print("  • Condition prevalence analysis")
